@@ -8,10 +8,7 @@ print(remove_dots_quotas('Write a simple function which removes dots and "double
 
 # Strings: Practical Task 2
 def border_string(s):
-    string = f'# {s} #'
-    border = '#' * len(string)
-    result = f'{border}\n{string}\n{border}'
-    return result
+    return '{2:#>{1}}{0}{3:#<{1}}'.format(s, len(s) + 7, '\n# ', ' #\n')
 
 
 print(border_string('some string'))
@@ -19,9 +16,7 @@ print(border_string('some string'))
 
 # Strings: Practical Task 3
 def unborder_string(s):
-    length = s.find('\n') + 1
-    string = s[length:-length].replace('#', '').strip()
-    return string
+    return s.split('\n')[1][2:-2]
 
 
 print(unborder_string(border_string('_some string_')))
