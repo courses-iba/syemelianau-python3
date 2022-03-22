@@ -12,10 +12,8 @@ print(swap_dict({1: 2, 3: 4, 5: 4, 7: 2, 9: 4}))
 # Dictionaries: Practical Task 2
 def compact_dict(d):
     comp_dict = {}
-    for key, value in d.items():
-        comp_dict[value] = comp_dict.get(value, [])
-        comp_dict[value].append(key)
-    comp_dict = {tuple(v): k for k, v in comp_dict.items()}
+    for key, value in swap_dict(d).items():
+        comp_dict[value] = key
     return comp_dict
 
 
