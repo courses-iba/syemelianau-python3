@@ -8,9 +8,14 @@ def transport_hub(schedule, days):
             per, cap = vehicle.split(' ')
             if day % int(per) == 0:
                 vehicles.append(int(cap))
-        capacity += sum(filter(lambda veh: veh > 0, vehicles))
+        producer, consumer = 0, 0
+        for vehicle in vehicles:
+            if vehicle > 0:
+                producer += vehicle
+            else:
+                consumer -= vehicle
+        capacity += producer
         max_per_day.append(capacity)
-        consumer = -sum(filter(lambda veh: veh < 0, vehicles))
         capacity -= consumer if capacity > consumer else capacity
     return max(max_per_day)
 
