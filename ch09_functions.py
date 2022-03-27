@@ -52,6 +52,10 @@ def fn(f, n):
     return callback
 
 
+def fnr(f, n):
+    return f if n == 1 else lambda v: v if n < 1 else fnr(f, n - 1)(f(v))
+
+
 def golden_ratio(n):
     return fn(lambda i: 1 + 1 / i, n)(1)
 
@@ -59,9 +63,16 @@ def golden_ratio(n):
 f1 = fn(lambda x: 'sin(%s)' % x, 5)
 f2 = fn(lambda x: sin(x), 5)
 
+f3 = fn(lambda x: 'sin(%s)' % x, 5)
+f4 = fn(lambda x: sin(x), 5)
+
 print('%s = %f' % (f1('1'), f2(1)))
 print('%s = %f' % (f1('2'), f2(2)))
 print(fn(lambda x: sin(x), 0)(1000))
+
+print('%s = %f' % (f3('1'), f4(1)))
+print('%s = %f' % (f3('2'), f4(2)))
+print(fnr(lambda x: sin(x), 0)(1000))
 
 print(
     golden_ratio(0),
