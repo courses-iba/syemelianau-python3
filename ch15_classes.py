@@ -5,6 +5,11 @@ from ch09_functions import gen_stream
 # Classes: Practical Task 1
 class Matrix:
     def __init__(self, rows, columns, gen):
+        r, c = 0, 0
+        for row, col, _ in gen():
+            if r > row or (r == row and c > col):
+                raise ValueError
+            r, c = row, col
         self.rows = rows
         self.cols = columns
         self.data = tuple(cell for cell in gen())
