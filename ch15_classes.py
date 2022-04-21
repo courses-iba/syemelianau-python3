@@ -1,24 +1,16 @@
-from operator import add, sub
+from operator import add, sub, mul
 from ch09_functions import gen_stream
 
 
 # Classes: Practical Task 1
 class Matrix:
     def __init__(self, rows, columns, gen):
-        r, c = 0, 0
-        for row, col, _ in gen():
-            if r > row or (r == row and c > col):
-                raise ValueError
-            r, c = row, col
         self.rows = rows
         self.cols = columns
-        self.data = tuple(cell for cell in gen())
+        self.data = sorted(sorted(tuple(c for c in gen() if c[2]), key=lambda c: c[1]), key=lambda c: c[0])
 
-    def __stream(self):
-        return gen_stream(self.rows * self.cols, self.data, lambda cell: (cell[0] * self.cols + cell[1], cell[2]))
-
-    def __matrix(self):
-        return zip(*[iter(self.__stream())] * self.cols)
+    def __gen(self):
+        return tuple(gen_stream(self.rows * self.cols, self.data, lambda c: (c[0] * self.cols + c[1], c[2])))
 
     def __operator(self, other, operation):
         if self.rows != other.rows and self.cols != other.cols:
@@ -27,22 +19,26 @@ class Matrix:
             self.rows,
             self.cols,
             lambda: tuple(
-                (int(index / self.cols), int(index % self.cols), cell)
-                for index, cell in enumerate(map(operation, self.__stream(), other.__stream())) if cell
+                (i // self.cols, i % self.cols, c)
+                for i, c in enumerate(map(operation, self.__gen(), other.__gen())) if c
             )
         )
 
     def mult(self, other):
         if self.cols != other.rows:
             raise ValueError
-        data = tuple()
-        for i, row in enumerate(
-                tuple(tuple(
-                    sum(a * b for a, b in zip(row, col)) for col in zip(*other.__matrix())
-                ) for row in self.__matrix())
-        ):
-            data += tuple((i, j, val) for j, val in enumerate(row) if val != 0)
-        return Matrix(self.rows, other.cols, lambda: data)
+        return Matrix(
+            self.rows,
+            other.cols,
+            lambda: sum((tuple(filter(
+                lambda c: c[2],
+                tuple((row, col, sum(map(
+                    mul,
+                    self.__gen()[row * self.cols:row * self.cols + self.cols],
+                    other.transpose().__gen()[col * other.rows:col * other.rows + other.rows]
+                ))) for col in range(other.cols))
+            )) for row in range(self.rows)), ())
+        )
 
     def mult_scalar(self, scalar):
         return Matrix(self.rows, self.cols, lambda: tuple((row, col, val * scalar) for row, col, val in self.data))
@@ -54,14 +50,10 @@ class Matrix:
         return self.__operator(other, sub)
 
     def transpose(self):
-        return Matrix(
-            self.cols,
-            self.rows,
-            lambda: tuple(sorted([(col, row, val) for row, col, val in self.data], key=lambda tup: tup[0]))
-        )
+        return Matrix(self.cols, self.rows, lambda: tuple((col, row, val) for row, col, val in self.data))
 
     def __repr__(self):
-        return '\n'.join([f'{row}' for row in self.__matrix()])
+        return '\n'.join([f'{row}' for row in zip(*[iter(self.__gen())] * self.cols)])
 
 
 def gen():
