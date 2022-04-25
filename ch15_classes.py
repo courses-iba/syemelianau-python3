@@ -7,53 +7,80 @@ class Matrix:
     def __init__(self, rows, columns, gen):
         self.rows = rows
         self.cols = columns
-        self.data = sorted(sorted(tuple(c for c in gen() if c[2]), key=lambda c: c[1]), key=lambda c: c[0])
+        self.data = gen
 
     def __gen(self):
-        return tuple(gen_stream(self.rows * self.cols, self.data, lambda c: (c[0] * self.cols + c[1], c[2])))
+        return gen_stream(self.rows * self.cols, self.data(), lambda c: (c[0] * self.cols + c[1], c[2]))
 
-    def __operator(self, other, operation):
+    def mult(self, other):
+        if self.cols != other.rows:
+            raise ValueError
+
+        res = ((
+            sum(a * b for a, b in zip(row, col))
+            for col in zip(*[other.transpose().__gen()] * other.rows)
+        ) for row in zip(*[self.__gen()] * self.cols))
+
+        return Matrix(
+            self.rows,
+            other.cols,
+            lambda: (
+                (i // other.cols, i % other.cols, c)
+                for i, c in enumerate(el for row in res for el in row) if c
+            )
+        )
+
+    def mult_scalar(self, scalar):
+        other = Matrix(
+            self.rows,
+            self.cols,
+            lambda: ((i // self.cols, i % self.cols, scalar) for i in range(self.rows * self.cols))
+        )
+        return Matrix(
+            self.rows,
+            self.cols,
+            lambda: (
+                (i // self.cols, i % self.cols, c)
+                for i, c in enumerate(map(mul, self.__gen(), other.__gen())) if c
+            )
+        )
+
+    def sum(self, other):
         if self.rows != other.rows and self.cols != other.cols:
             raise ValueError
         return Matrix(
             self.rows,
             self.cols,
-            lambda: tuple(
+            lambda: (
                 (i // self.cols, i % self.cols, c)
-                for i, c in enumerate(map(operation, self.__gen(), other.__gen())) if c
+                for i, c in enumerate(map(add, self.__gen(), other.__gen())) if c
             )
         )
 
-    def mult(self, other):
-        if self.cols != other.rows:
+    def subt(self, other):
+        if self.rows != other.rows and self.cols != other.cols:
             raise ValueError
         return Matrix(
             self.rows,
-            other.cols,
-            lambda: sum((tuple(filter(
-                lambda c: c[2],
-                tuple((row, col, sum(map(
-                    mul,
-                    self.__gen()[row * self.cols:row * self.cols + self.cols],
-                    other.transpose().__gen()[col * other.rows:col * other.rows + other.rows]
-                ))) for col in range(other.cols))
-            )) for row in range(self.rows)), ())
+            self.cols,
+            lambda: (
+                (i // self.cols, i % self.cols, c)
+                for i, c in enumerate(map(sub, self.__gen(), other.__gen())) if c
+            )
         )
 
-    def mult_scalar(self, scalar):
-        return Matrix(self.rows, self.cols, lambda: tuple((row, col, val * scalar) for row, col, val in self.data))
-
-    def sum(self, other):
-        return self.__operator(other, add)
-
-    def subt(self, other):
-        return self.__operator(other, sub)
-
     def transpose(self):
-        return Matrix(self.cols, self.rows, lambda: tuple((col, row, val) for row, col, val in self.data))
+        return Matrix(
+            self.cols,
+            self.rows,
+            lambda: sorted(
+                ((i % self.cols, i // self.cols, c) for i, c in enumerate(self.__gen()) if c),
+                key=lambda c: c[0]
+            )
+        )
 
     def __repr__(self):
-        return '\n'.join([f'{row}' for row in zip(*[iter(self.__gen())] * self.cols)])
+        return '\n'.join([f'{row}' for row in zip(*[self.__gen()] * self.cols)])
 
 
 def gen():
